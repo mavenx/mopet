@@ -20,6 +20,12 @@ public:
 
 	bool loadImageSet(std::vector<cv::Mat> &image_set);
 
+	// all images of image set should be nearly the same!
+	// SURF is used
+	//
+	// @return transformed imageSet
+	std::vector<cv::Mat> matchImages(std::vector<cv::Mat> &image_set);
+
 private:
 	std::string refdir_;
 	std::string image_;

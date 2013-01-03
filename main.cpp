@@ -7,7 +7,7 @@
 #include "helper.h"
 #include "preprocessor.h"
 
-std::vector<cv::Mat> image_set;
+std::vector<cv::Mat> image_set; // input image array
 
 int main(int argc, char* argv[])
 {

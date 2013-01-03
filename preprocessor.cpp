@@ -25,9 +25,9 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
     DIR* dirp = opendir(refdir_.c_str());
     struct dirent* dp;
 
-    while ((dp = readdir(dirp)) != NULL && count < 1)
+    while ((dp = readdir(dirp)) != NULL)
     {
-        std::string fileName = image_;
+        std::string fileName = std::string(dp->d_name);
         if(fileName != ".." && fileName != ".")
         {
             std::string imgFile = refdir_ + fileName;
@@ -35,7 +35,7 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 
             if(! img.data )                              // Check for invalid input
             {
-                std::cout <<  "Could not open or find the image: " << image_ << std::endl ;
+                std::cout <<  "Could not open image: " << image_ << std::endl ;
                 return false;
             }
 
@@ -44,13 +44,19 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 
 //            addResponsesForImage(img, responses);
             count++;
+//            std::cout <<  count << "..";
 
         }
     }
+    std::cout << image_set.size( )<<" input images loaded." << std::endl;
     closedir(dirp);
 
     return true;
 }
 
+std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
+{
+//	cv::Mat dummy = cv::Mat(image_set.at(0).rows*3, image_set.at(0).cols*3, image_set.at(0).type());
 
+}
 

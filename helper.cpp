@@ -7,20 +7,19 @@
 
 Helper::Helper()
 {
-//  for (int i = 0; i < 3; i++)
-//    classes_.push_back("");
-//
-//  refdir_ = "";
-//  image2classify_ = "";
+
 }
 
 bool Helper::verifyInputArguments(int argc, char* argv[])
 {
   bool success = true;
-  if (argc < 1)
+  if (argc < 2)
   {
     std::cerr
-        << "Usage: ./mopet image_path image_name"
+        << "Usage: ./mopet imageSet_path first_image_name"
+        << std::endl
+        << std::endl
+        << "MOPET Software v1.0"
         << std::endl;
     return false;
   }
@@ -56,7 +55,7 @@ bool Helper::verifyInputArguments(int argc, char* argv[])
   std::ifstream filetest(img_path.c_str());
   if (filetest.fail())
   {
-    std::cerr << "[ERROR] No images (like " << img_path.c_str() <<") found" << std::endl;
+    std::cerr << "[ERROR] No image (" << img_path.c_str() <<") found" << std::endl;
     success = false;
   }
   else
