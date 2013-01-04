@@ -1,4 +1,4 @@
-## IPPR (BVME) - Assignment 3
+## MOPET Project
 ## CMakeLists file
 
 cmake_minimum_required(VERSION 2.6)
@@ -31,6 +31,8 @@ target_link_libraries(
   opencv_highgui
   opencv_features2d
   opencv_calib3d
+  opencv_nonfree
+  opencv_flann
 )
 
 # If your compiler supports OpenMP, it may be a good idea

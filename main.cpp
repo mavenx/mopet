@@ -8,6 +8,7 @@
 #include "preprocessor.h"
 
 std::vector<cv::Mat> image_set; // input image array
+std::vector<cv::Mat> transformed_set; // transformed image array
 
 int main(int argc, char* argv[])
 {
@@ -21,15 +22,19 @@ int main(int argc, char* argv[])
   Preprocessor preprocessor(helper.getRefDir(), helper.getImage());
   preprocessor.loadImageSet(image_set);
 
-//   preprocess images (matching,stitching,....)
-
+  // preprocess images (matching,stitching,....)
+  transformed_set = preprocessor.matchImages(image_set);
 
 
   // detect and remove foreground objects
 
-  	cv::namedWindow( "Out", CV_WINDOW_NORMAL);
-  	cv::imshow("Out", image_set.at(0));
-  	cv::waitKey(0);
+
+
+
+
+//  	cv::namedWindow( "Out", CV_WINDOW_NORMAL);
+//  	cv::imshow("Out", image_set.at(0));
+//  	cv::waitKey(0);
 
 
 std::cout << "FIN" << std::endl;

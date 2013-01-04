@@ -23,7 +23,7 @@ public:
 	// all images of image set should be nearly the same!
 	// SURF is used
 	//
-	// @return transformed imageSet
+	// @return transformed imageSet (all images aligned
 	std::vector<cv::Mat> matchImages(std::vector<cv::Mat> &image_set);
 
 private:
