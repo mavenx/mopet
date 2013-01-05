@@ -24,7 +24,7 @@ public:
 	// SURF is used
 	//
 	// @return transformed imageSet (all images aligned
-	std::vector<cv::Mat> matchImages(std::vector<cv::Mat> &image_set);
+	void matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::Mat> &transformed_set, std::vector<cv::Mat> &transformed_gray_set);
 
 private:
 	std::string refdir_;

@@ -10,6 +10,8 @@
 #include "opencv2/core/core.hpp"
 //#include "opencv2/features2d/features2d.hpp"
 #include <opencv2/nonfree/features2d.hpp>
+#include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/legacy/legacy.hpp>
 #include "opencv2/calib3d/calib3d.hpp"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdlib.h>
@@ -64,21 +66,32 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
     return true;
 }
 
-
-
-std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
+void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::Mat> &transformed, std::vector<cv::Mat> &transformed_gray_set)
 {
+	bool eq_hist = true;
 
-	float scale = 1; //scale for SURF
-	std::vector<cv::Mat> transformed;
-	Mat temp = cv::Mat(image_set.at(0).rows, image_set.at(0).cols, image_set.at(0).type());
-
-	Mat first_img;
-	resize(image_set.at(0), first_img, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale));
+	Mat temp;
+	Mat first_img = image_set.at(0);
 	Mat next_img;
 
-	int minHessian = 500;
-	cv::SurfFeatureDetector detector( minHessian, 2, 2, false, false);
+	transformed.push_back(first_img);
+
+	cv::cvtColor(image_set.at(0), temp, CV_BGR2GRAY);
+	if(eq_hist)
+		cv::equalizeHist(temp, temp);
+
+	transformed_gray_set.push_back(temp);
+
+	first_img = image_set.at(0);
+//	resize(image_set.at(0), first_img, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale));
+
+
+//	int minHessian = 500;
+//	cv::SurfFeatureDetector detector( minHessian, 2, 2, false, false);
+	cv::FastFeatureDetector detector(40, false);
+//	cv::GFTTDetector detector( int maxCorners=1000, double qualityLevel=0.01, double minDistance=1,
+//	                  int blockSize=3, bool useHarrisDetector=false, double k=0.04 );
+
 	cv::SurfDescriptorExtractor extractor;
 	cv::FlannBasedMatcher matcher;
 
@@ -89,17 +102,13 @@ std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
 	detector.detect( first_img, keypts_first );
 	extractor.compute( first_img, keypts_first, descriptors_first );
 
-	cv::namedWindow( "Out", CV_WINDOW_NORMAL);
-//	cv::imshow("Out", first_img);
-	cv::imshow("Out", image_set.at(0));
-	cv::waitKey(0);
-
 
 	for(unsigned int frames = 1; frames < image_set.size(); frames++)
 	{
 		cout << "Transforming frame #" << frames << endl;
-		resize(image_set.at(0), next_img, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale));
+
 		next_img = image_set.at(frames);
+//		resize(image_set.at(0), next_img, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale));
 
 		//-- Step 1: Detect the keypoints using SURF Detector
 		detector.detect( next_img, keypts_next );
@@ -111,7 +120,7 @@ std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
 		matcher.match( descriptors_next, descriptors_first, matches );
 
 		double max_dist = 0; double min_dist = 100;
-
+		cout << descriptors_next.rows << endl;
 		//-- Quick calculation of max and min distances between keypoints
 		for( int i = 0; i < descriptors_next.rows; i++ )
 		{
@@ -128,7 +137,7 @@ std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
 
 		for( int i = 0; i < descriptors_next.rows; i++ )
 		{
-			if( matches[i].distance < 3*min_dist )
+			if( matches[i].distance < 2*min_dist )
 			{
 				good_matches.push_back( matches[i]);
 			}
@@ -147,9 +156,9 @@ std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
 			first.push_back( keypts_first[ good_matches[i].trainIdx ].pt );
 		}
 
-		Mat H = findHomography( next, first, CV_RANSAC );
+		Mat H = findHomography( next, first, CV_RANSAC, 3);
 
-		cout << "H: "<<H << endl;
+//		cout << "H: "<<H << endl;
 
 		//// create matching image:
 
@@ -160,41 +169,17 @@ std::vector<cv::Mat> Preprocessor::matchImages(std::vector<cv::Mat> &image_set)
 		std::vector<Point2f> first_corners(4);
 
 		perspectiveTransform( next_corners, first_corners, H);
-//		warpPerspective(next_img, temp, H, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale),INTER_LINEAR, BORDER_CONSTANT);
-		warpPerspective(image_set.at(frames), temp, H, Size(image_set.at(0).cols, image_set.at(0).rows),INTER_LINEAR, BORDER_CONSTANT);
 
+		// COLORED
+		warpPerspective(next_img, temp, H, Size(image_set.at(0).cols, image_set.at(0).rows),INTER_LINEAR, BORDER_CONSTANT);
 		transformed.push_back(temp);
 
-//		cv::namedWindow( "Out", CV_WINDOW_NORMAL);
-//		cv::imshow("Out", temp);
-//		cv::waitKey(0);
+		// GRAYSCALE
+		cv::cvtColor(image_set.at(frames), next_img, CV_BGR2GRAY);
+		if(eq_hist)
+			cv::equalizeHist(next_img, next_img);
+
+		warpPerspective(next_img, temp, H, Size(image_set.at(0).cols, image_set.at(0).rows),INTER_LINEAR, BORDER_CONSTANT, 255);
+		transformed_gray_set.push_back(temp);
 	}
-
-	//	Mat img_matches;
-	//	drawMatches( next_img, keypts_next, first_img, keypts_first,
-	//			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-	//			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-
-//	//-- Get the corners from the image_1 ( the object to be "detected" )
-//	std::vector<Point2f> next_corners(4);
-//	next_corners[0] = cvPoint(0,0); next_corners[1] = cvPoint( next_img.cols, 0 );
-//	next_corners[2] = cvPoint( next_img.cols, next_img.rows ); next_corners[3] = cvPoint( 0, next_img.rows );
-//	std::vector<Point2f> first_corners(4);
-//
-//	perspectiveTransform( next_corners, first_corners, H);
-//
-//	//-- Draw lines between the corners (the mapped object in the scene - image_2 )
-//	line( img_matches, first_corners[0] + Point2f( next_img.cols, 0), first_corners[1] + Point2f( next_img.cols, 0), Scalar(0, 255, 0), 4 );
-//	line( img_matches, first_corners[1] + Point2f( next_img.cols, 0), first_corners[2] + Point2f( next_img.cols, 0), Scalar( 0, 255, 0), 4 );
-//	line( img_matches, first_corners[2] + Point2f( next_img.cols, 0), first_corners[3] + Point2f( next_img.cols, 0), Scalar( 0, 255, 0), 4 );
-//	line( img_matches, first_corners[3] + Point2f( next_img.cols, 0), first_corners[0] + Point2f( next_img.cols, 0), Scalar( 0, 255, 0), 4 );
-//
-//	//-- Show detected matches
-//	cv::namedWindow( "Matches", CV_WINDOW_NORMAL);
-//	imshow( "Matches", img_matches );
-//
-//	waitKey(0);
-
-	return transformed;
 }
-

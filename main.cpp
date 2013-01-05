@@ -6,38 +6,44 @@
 
 #include "helper.h"
 #include "preprocessor.h"
+#include "remover.h"
 
-std::vector<cv::Mat> image_set; // input image array
-std::vector<cv::Mat> transformed_set; // transformed image array
+
 
 int main(int argc, char* argv[])
 {
-  Helper helper;
+	std::vector<cv::Mat> image_set; // input image array
+	std::vector<cv::Mat> transformed_set; // transformed image array
+	std::vector<cv::Mat> transformed_gray_set; // transformed image array
+	cv::Mat foreground;
 
-  bool success = helper.verifyInputArguments(argc, argv);
+	Helper helper;
 
-  if (!success)
-    return -1;
+	bool success = helper.verifyInputArguments(argc, argv);
 
-  Preprocessor preprocessor(helper.getRefDir(), helper.getImage());
-  preprocessor.loadImageSet(image_set);
+	if (!success)
+		return -1;
 
-  // preprocess images (matching,stitching,....)
-  transformed_set = preprocessor.matchImages(image_set);
+	Preprocessor preprocessor(helper.getRefDir(), helper.getImage());
+	Remover remover;
+	preprocessor.loadImageSet(image_set);
 
+	// preprocess images
+	preprocessor.matchImages(image_set, transformed_set, transformed_gray_set);
 
-  // detect and remove foreground objects
-
-
-
-
-
-//  	cv::namedWindow( "Out", CV_WINDOW_NORMAL);
-//  	cv::imshow("Out", image_set.at(0));
-//  	cv::waitKey(0);
+	// detect and remove foreground objects
+	remover.detectForeground(transformed_gray_set, foreground);
 
 
-std::cout << "FIN" << std::endl;
-  return 0;
+
+//	for(unsigned int n = 0; n < image_set.size(); n++)
+//	{
+//		cv::namedWindow( "Out", CV_WINDOW_NORMAL);
+//		cv::imshow("Out", transformed_gray_set.at(n));
+//		cv::waitKey(0);
+//	}
+
+	std::cout << "FIN" << std::endl;
+	return 0;
 }
 
