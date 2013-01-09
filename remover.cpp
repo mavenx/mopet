@@ -19,6 +19,21 @@ Remover::~Remover() {
 
 }
 
+//std::vector<cv::Mat> Remover::invertSet(std::vector<cv::Mat> input_set)
+//{
+//	std::vector<cv::Mat> inverted_set;
+//
+//	for(int f = 0; f < input_set.size(); f++)
+//	{
+//		cv::invert(inverted_set.at(f), input_set.at(0));
+//	}
+//
+//
+//
+//
+//	return inverted_set;
+//}
+
 void Remover::detectForeground(std::vector<cv::Mat> &gray_set, cv::Mat &foregroundMask)
 {
 	cv::Mat temp;
@@ -29,7 +44,7 @@ void Remover::detectForeground(std::vector<cv::Mat> &gray_set, cv::Mat &foregrou
 
 	for(unsigned int f = 1; f < gray_set.size(); f++)
 	{
-		temp = gray_set.at(0) - gray_set.at(f);
+		temp = cv::abs(gray_set.at(0) - gray_set.at(f));
 //		cv::threshold(temp, temp, 50, 255, CV_THRESH_BINARY);
 		foregroundMask = foregroundMask + temp;
 	}

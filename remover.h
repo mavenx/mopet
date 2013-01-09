@@ -17,6 +17,8 @@ public:
 	Remover();
 	virtual ~Remover();
 
+//	std::vector<cv::Mat> invertSet(std::vector<cv::Mat> &input_set);
+
 	void detectForeground(std::vector<cv::Mat> &gray_set, cv::Mat &foregroundMask);
 
 	void removeForeground();
