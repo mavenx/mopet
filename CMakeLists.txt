@@ -20,8 +20,8 @@ add_executable(
   helper.cpp
   preprocessor.h
   preprocessor.cpp
-  remover.h
-  remover.cpp
+  VarianceForegroundClassifier.h
+  VarianceForegroundClassifier.cpp
 )
 
 target_link_libraries(

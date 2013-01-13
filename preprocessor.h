@@ -27,6 +27,10 @@ public:
 	void matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::Mat> &transformed_set, std::vector<cv::Mat> &transformed_gray_set);
 
 private:
+
+	void do1ChnHist(const cv::Mat &_i, const cv::Mat &mask, double* h, double* cdf);
+	void histMatchRGB(cv::Mat& src, const cv::Mat& src_mask, const cv::Mat& dst, const cv::Mat& dst_mask);
+
 	std::string refdir_;
 	std::string image_;
 

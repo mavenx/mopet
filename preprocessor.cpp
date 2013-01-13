@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define HISTMATCH_EPSILON 0.000001
+
 using namespace cv;
 using namespace std;
 
@@ -62,6 +64,18 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
     }
     std::cout << image_set.size( )<<" input images loaded." << std::endl;
     closedir(dirp);
+
+
+    //match all images to image 0
+
+    for(int i = 1; i < image_set.size();i++)
+    {
+        histMatchRGB(image_set.at(i),cv::Mat_<uchar>::ones(image_set.at(1).size()), image_set.at(0),cv::Mat_<uchar>::ones(image_set.at(1).size()));
+        //cv::imwrite("out/after.jpg", image_set.at(1));
+    }
+
+
+
 
     return true;
 }
@@ -182,4 +196,112 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 		warpPerspective(next_img, temp, H, Size(image_set.at(0).cols, image_set.at(0).rows),INTER_LINEAR, BORDER_CONSTANT, 255);
 		transformed_gray_set.push_back(temp);
 	}
+}
+
+
+// Compute histogram and CDF for an image with mask
+void Preprocessor::do1ChnHist(const cv::Mat &_i, const cv::Mat &mask, double* h, double* cdf)
+{
+    cv::Mat _t = _i.reshape(1,1);
+    cv::Mat _tm;
+
+    mask.copyTo(_tm);
+    _tm = _tm.reshape(1,1);
+
+    for(int p=0;p<_t.cols;p++)
+    {
+        if(_tm.at<uchar>(0,p) > 0)
+        {
+            uchar c = _t.at<uchar>(0,p);
+            h[c] += 1.0;
+        }
+    }
+
+    //normalize hist
+    Mat _tmp(1,256,CV_64FC1,h);
+    double minVal,maxVal;
+    cv::minMaxLoc(_tmp,&minVal,&maxVal);
+    _tmp = _tmp / maxVal;
+
+    cdf[0] = h[0];
+    for(int j=1;j<256;j++)
+    {
+        cdf[j] = cdf[j-1]+h[j];
+    }
+
+    //normalize CDF
+    _tmp.data = (uchar*)cdf;
+    cv::minMaxLoc(_tmp,&minVal,&maxVal);
+    _tmp = _tmp / maxVal;
+}
+
+//#define BTM_DEBUG
+
+
+// match histograms of 'src' to that of 'dst', according to both masks
+void Preprocessor::histMatchRGB(cv::Mat& src, const cv::Mat& src_mask, const cv::Mat& dst, const cv::Mat& dst_mask)
+{
+#ifdef BTM_DEBUG
+    namedWindow("original source",CV_WINDOW_AUTOSIZE);
+    imshow("original source",src);
+    namedWindow("original query",CV_WINDOW_AUTOSIZE);
+    imshow("original query",dst);
+#endif
+
+    vector<Mat> chns;
+    split(src,chns);
+    vector<Mat> chns1;
+    split(dst,chns1);
+    Mat src_hist = Mat::zeros(1,256,CV_64FC1);
+    Mat dst_hist = Mat::zeros(1,256,CV_64FC1);
+    Mat src_cdf = Mat::zeros(1,256,CV_64FC1);
+    Mat dst_cdf = Mat::zeros(1,256,CV_64FC1);
+    Mat Mv(1,256,CV_8UC1);
+    uchar* M = Mv.ptr<uchar>();
+
+    for(int i=0;i<3;i++) {
+        src_hist.setTo(0);
+        dst_hist.setTo(0);
+        src_cdf.setTo(0);
+        src_cdf.setTo(0);
+
+        double* _src_cdf = src_cdf.ptr<double>();
+        double* _dst_cdf = dst_cdf.ptr<double>();
+        double* _src_hist = src_hist.ptr<double>();
+        double* _dst_hist = dst_hist.ptr<double>();
+
+        do1ChnHist(chns[i],src_mask,_src_hist,_src_cdf);
+        do1ChnHist(chns1[i],dst_mask,_dst_hist,_dst_cdf);
+
+        uchar last = 0;
+
+
+        for(int j=0;j<src_cdf.cols;j++) {
+            double F1j = _src_cdf[j];
+
+            for(uchar k = last; k<dst_cdf.cols; k++) {
+                double F2k = _dst_cdf[k];
+                if(abs(F2k - F1j) < HISTMATCH_EPSILON || F2k > F1j) {
+                    M[j] = k;
+                    last = k;
+                    break;
+                }
+            }
+        }
+
+        Mat lut(1,256,CV_8UC1,M);
+        LUT(chns[i],lut,chns[i]);
+    }
+
+    Mat res;
+    merge(chns,res);
+
+#ifdef BTM_DEBUG
+    namedWindow("matched",CV_WINDOW_AUTOSIZE);
+    imshow("matched",res);
+
+    waitKey(0);
+#endif
+
+    res.copyTo(src);
 }

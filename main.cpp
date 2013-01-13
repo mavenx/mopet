@@ -6,7 +6,7 @@
 
 #include "helper.h"
 #include "preprocessor.h"
-#include "remover.h"
+#include "VarianceForegroundClassifier.h"
 
 
 
@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 	std::vector<cv::Mat> image_set; // input image array
 	std::vector<cv::Mat> transformed_set; // transformed image array
 	std::vector<cv::Mat> transformed_gray_set; // transformed image array
-	cv::Mat foreground;
+	std::vector<cv::Mat> foreground_set;
 
 	Helper helper;
 
@@ -25,14 +25,17 @@ int main(int argc, char* argv[])
 		return -1;
 
 	Preprocessor preprocessor(helper.getRefDir(), helper.getImage());
-	Remover remover;
+	VarianceForegroundClassifier classifier;
+
+
 	preprocessor.loadImageSet(image_set);
 
 	// preprocess images
 	preprocessor.matchImages(image_set, transformed_set, transformed_gray_set);
 
+
 	// detect and remove foreground objects
-	remover.detectForeground(transformed_gray_set, foreground);
+	classifier.detectForeground(transformed_gray_set, transformed_set, foreground_set);
 
 
 
