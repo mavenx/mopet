@@ -54,23 +54,32 @@ void VarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_s
 	cv::Mat values = cv::Mat_<unsigned char>::zeros(1, numpics);
 
 	float beta = 1;
-	float alpha = 180;
+	float alpha = 70;
 
 	for(int y = 0; y < foregroundMasks.at(0).rows; y++)
 	{
 	    for(int x = 0; x < foregroundMasks.at(0).cols; x++)
 	    {
+	        //extract the pixel values to a cv::Mat
 	        for(unsigned int f = 0; f < s_gray_set.size(); f++)
 	        {
 	            values.at<unsigned char>(0,f) = s_gray_set.at(f).at<unsigned char>(y,x);
 	        }
 
+	        //sort the pixel values
 	        cv::sort(values, values, CV_SORT_ASCENDING + CV_SORT_EVERY_ROW);
 
+
+	        //variables for remembering the maximum of the
+	        //cost function.
 	        float max_func = -FLT_MAX;
 	        int max_start = 0;
 	        int max_length = 0;
 
+
+	        //iterate over all possible groups of pixel values
+	        //and find a group with similar pixel values.
+	        //(as a similarity measure, the variance is used)
 	        for(int start = 0; start < numpics; start++)
 	        {
 	            float mean;
@@ -114,7 +123,7 @@ void VarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_s
 	//remove noise:
 	for(unsigned int f = 0; f < gray_set.size(); f++)
     {
-	    int morph_size = 5;
+	    int morph_size = 3;
 
 	    cv::Mat kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
 

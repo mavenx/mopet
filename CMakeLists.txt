@@ -9,7 +9,8 @@ set(CMAKE_INCLUDE_DIRS_CONFIGCMAKE "${CMAKE_INSTALL_PREFIX}/include/opencv" "${C
 find_package(OpenCV)
 include_directories(${OPENCV_INCLUDE_DIR})
 
-set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_CXX_FLAGS "-O2")
+#-g -Wall")
 
 
 # Project config
@@ -22,6 +23,8 @@ add_executable(
   preprocessor.cpp
   VarianceForegroundClassifier.h
   VarianceForegroundClassifier.cpp
+  InPainter.h
+  InPainter.cpp
 )
 
 target_link_libraries(
