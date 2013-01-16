@@ -15,7 +15,7 @@
 
 class Preprocessor {
 public:
-	Preprocessor(std::string refdir, std::string image);
+	Preprocessor(std::string refdir, int numberOfImagesToUse);
 	virtual ~Preprocessor();
 
 	bool loadImageSet(std::vector<cv::Mat> &image_set);
@@ -33,6 +33,7 @@ private:
 
 	std::string refdir_;
 	std::string image_;
+	int numberOfImagesToUse;
 
 };
 

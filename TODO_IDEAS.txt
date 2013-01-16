@@ -1,0 +1,48 @@
+In dieses File können Verbesserungsvorschläge
+und noch was noch zu tun ist kommen.
+
+- ... noch nicht erledigt
++ ... erledigt
+
+
+- Für histogramm specification(histogramm-matching) nur jene Bereiche verwenden,
+ welche sich nicht verändern. Daher nach dem Registrieren der Bilder(matchen)
+ z.B. mittels Aufsummierung der Differenzen jene Bereiche maskieren, die möglichst
+ invariant sind. Auf diesen Bereich dann das Histogramm-Matching anwenden.
+ 
+- Den ColorVarianceForegroundClassifier von floating point auf fixed-point umschreiben
+ um die Performance deutlich zu erhöhen
+
+- Die Foreground-klassifikation nicht auf der höchsten Auflösung, sondern die Bilder
+ vorher downsamplen um die Performance zu verbessern.
+ Anstatt dem Downsamplen könnte man auch einfach die Schrittweite beim Durchlaufen
+ der Pixel erhöhen. Dabei muss der Gausskernel aber so angepasst werden, dass er groß
+ genug ist um kein Aliasing zu erhalten.
+ 
+
+- Anstatt wie beim ColorVarianceForegroundClassifier einen Vektor der Länge 3 (RGB Channels),
+ könnte man auch einen erweiterten Feature Vektor verwenden.
+ Der Vektor könnte z.B. benachbarte Pixel, oder Gradienten beinhalten.
+ 
+
+- Der Matching algorithmus zum Ausrichten der Bilder kann extrem beschleunigt werden,
+ wenn anstatt der bisher detektierten 30000 Keypoints (30000=maxNumKeypoints)
+ viel weniger verwendet werden (ich glaube, dass ca. 1000-5000 ausreichen würden)
+ Jedoch tritt noch ein Problem auf: Wenn man weniger Keypoints verwendet
+ funktioniert derzeit die Homographieberechnung nicht mehr sehr gut.
+ 
+ Grund dafür ist, dass ich derzeit einfach nur die ersten maxNumKeypoints in der Liste
+ für die Homographie verwende. Diese liegen alle ganz oben im Bild und sind daher für
+ die Homographieberechnung ungeeignet.
+ Vorschlag: Einfach eine kleine zufällige Auswahl an Keypoints verwenden.
+ 
+ 
+- Da ein großer Anwendungsfall von unserer Anwendung das Entfernen von Personen ist,
+ könnte man zusätzlich noch einen Personen Detektor(z.B. HOG) verwenden.
+ Diese Bereiche mit Personen könnte man zusätzlich noch als Foreground markieren.
+ Oder diese nicht als Foreground makieren, sondern in der Kostenfunktion einen
+ kleinen Strafterm bei Bereichen mit Personen einführen.
+ 
+- Parameteroptimierungen  
+ 
+   

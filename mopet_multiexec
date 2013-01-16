@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+
+for dir in pic_sets/halfres/*
+do
+	echo "exec mopet for $dir"
+	echo $base
+	./mopet $dir/ 
+	fname=`basename $dir`
+	cp out/result.jpg multiexec_results/$fname.jpg
+done

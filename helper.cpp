@@ -3,11 +3,12 @@
 #include <dirent.h>
 #include <fstream>
 #include <string>
+#include <stdlib.h>
 
 
 Helper::Helper()
 {
-
+    number_of_images_to_use = 0;
 }
 
 bool Helper::verifyInputArguments(int argc, char* argv[])
@@ -16,7 +17,7 @@ bool Helper::verifyInputArguments(int argc, char* argv[])
   if (argc < 2)
   {
     std::cerr
-        << "Usage: ./mopet imageSet_path first_image_name"
+        << "Usage: ./mopet imageSet_path number_of_images_to_use"
         << std::endl
         << std::endl
         << "MOPET Software v1.0"
@@ -51,7 +52,9 @@ bool Helper::verifyInputArguments(int argc, char* argv[])
 ////      classes_[i - 1] = std::string(argv[1 + i]) + "/";
 //    }
 //  }
-  std::string img_path = std::string(argv[1]) + std::string(argv[2]);
+
+
+  /*std::string img_path = std::string(argv[1]) + std::string(argv[2]);
   std::ifstream filetest(img_path.c_str());
   if (filetest.fail())
   {
@@ -61,7 +64,15 @@ bool Helper::verifyInputArguments(int argc, char* argv[])
   else
   {
     image_ = argv[2];
+  }*/
+
+  if(argc == 3)
+  {
+      number_of_images_to_use = atoi(argv[2]);
   }
+
+
+
   closedir(dir);
   return success;
 }

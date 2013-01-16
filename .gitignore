@@ -6,4 +6,4 @@ cmake_install.cmake
 CMakeFiles
 CMakeCache.txt
 Makefile
-out/
+*~

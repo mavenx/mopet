@@ -46,12 +46,14 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
     //most likely also contaminated with some artefacts.
     for(unsigned int f = 0; f < color_set.size(); f++)
     {
-        int morph_size = 10;
+        int morph_size = 1;
 
         cv::Mat kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
 
 
-        /*cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_DILATE, kernel);//, Point(-1,-1), 2);
+        //cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_DILATE, kernel);//, Point(-1,-1), 2);
+
+        /*
         cv::namedWindow( "BG", CV_WINDOW_NORMAL);
         cv::imshow("BG", foregroundMasks.at(f));
         cv::waitKey(0);*/
@@ -60,7 +62,7 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
     //Now calculate the distance transform.
     //As a result we get the distance to all foreground objects
     //This is necessary to obtain the alpha value for alpha blending
-    cv::distanceTransform(1-foregroundMasks.at(0), distanceToForeground, CV_DIST_L2, CV_DIST_MASK_PRECISE);
+    cv::distanceTransform(255-foregroundMasks.at(0), distanceToForeground, CV_DIST_L2, CV_DIST_MASK_PRECISE);
 
 
     for(int y = 0; y < foregroundMasks.at(0).rows; y++)
@@ -127,8 +129,8 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
     }
 
 
-    cv::namedWindow( "BG", CV_WINDOW_NORMAL);
+    /*cv::namedWindow( "BG", CV_WINDOW_NORMAL);
     cv::imshow("BG", outputImage);
-    cv::waitKey(0);
+    cv::waitKey(0);*/
 }
 

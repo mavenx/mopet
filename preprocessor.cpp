@@ -22,10 +22,10 @@
 using namespace cv;
 using namespace std;
 
-Preprocessor::Preprocessor(std::string refdir, std::string image) {
+Preprocessor::Preprocessor(std::string refdir, int numberOfImagesToUse) {
 
 	refdir_ = refdir;
-	image_ = image;
+	this->numberOfImagesToUse = numberOfImagesToUse;
 }
 
 Preprocessor::~Preprocessor() {
@@ -38,6 +38,8 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 	int count = 0;
     DIR* dirp = opendir(refdir_.c_str());
     struct dirent* dp;
+
+
 
     while ((dp = readdir(dirp)) != NULL)
     {
@@ -54,11 +56,12 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
             }
 
             image_set.push_back(img);
-//            preprocess(img);
 
-//            addResponsesForImage(img, responses);
+
             count++;
-//            std::cout <<  count << "..";
+
+            if(count == numberOfImagesToUse)
+                break;
 
         }
     }
@@ -68,9 +71,9 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 
     //match all images to image 0
 
-    for(int i = 1; i < image_set.size();i++)
+    for(unsigned i = 1; i < image_set.size();i++)
     {
-        histMatchRGB(image_set.at(i),cv::Mat_<uchar>::ones(image_set.at(1).size()), image_set.at(0),cv::Mat_<uchar>::ones(image_set.at(1).size()));
+        //histMatchRGB(image_set.at(i),cv::Mat_<uchar>::ones(image_set.at(1).size()), image_set.at(0),cv::Mat_<uchar>::ones(image_set.at(1).size()));
         //cv::imwrite("out/after.jpg", image_set.at(1));
     }
 
@@ -82,11 +85,14 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 
 void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::Mat> &transformed, std::vector<cv::Mat> &transformed_gray_set)
 {
-	bool eq_hist = true;
+	bool eq_hist = false;
 
 	Mat temp;
 	Mat first_img = image_set.at(0);
 	Mat next_img;
+
+	const int maxNumKeypoints = -1;
+	const unsigned minNumKeypoints = 150;
 
 	transformed.push_back(first_img);
 
@@ -114,6 +120,14 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 	Mat descriptors_next, descriptors_first;
 
 	detector.detect( first_img, keypts_first );
+
+	while(keypts_first.size() > (int)maxNumKeypoints && maxNumKeypoints > 0)
+	{
+	    //remove all keypoints after numberOfImagesToUse
+
+	    keypts_first.pop_back();
+	}
+
 	extractor.compute( first_img, keypts_first, descriptors_first );
 
 
@@ -126,6 +140,38 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 
 		//-- Step 1: Detect the keypoints using SURF Detector
 		detector.detect( next_img, keypts_next );
+
+		while(keypts_next.size() > (int)maxNumKeypoints && maxNumKeypoints > 0)
+        {
+            //remove all keypoints after maxNumKeypoints
+
+		    keypts_next.pop_back();
+        }
+
+		/*
+		 * Draw position of keypoints (for debugging):
+		 *
+		 * for(unsigned i = 0; i < keypts_next.size(); i++)
+		{
+		    int x,y;
+
+		    x = keypts_next.at(i).pt.x;
+		    y = keypts_next.at(i).pt.y;
+
+		    if(x > 0 && x < next_img.cols && y > 0 && y < next_img.rows)
+		    {
+		        Vec3b &v = next_img.at<Vec3b>(y,x);
+
+		        v[0] = 0;
+		        v[1] = 0;
+		        v[2] = 255;
+		    }
+		}
+
+		cv::namedWindow( "Fore", CV_WINDOW_NORMAL);
+        cv::imshow("Fore", next_img);
+        cv::waitKey(0);*/
+
 
 		//-- Step 2: Calculate descriptors (feature vectors)
 		extractor.compute( next_img, keypts_next, descriptors_next );
@@ -149,6 +195,9 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 		//-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
 		std::vector< DMatch > good_matches;
 
+		if(min_dist == 0)
+		    min_dist = 0.05;
+
 		for( int i = 0; i < descriptors_next.rows; i++ )
 		{
 			if( matches[i].distance < 2*min_dist )
@@ -157,7 +206,32 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 			}
 		}
 
+		int prev_factor = 2;
+		int cur_factor;
 
+		while(good_matches.size() < minNumKeypoints)
+		{
+		    //we need at least 4 matches for a homography
+		    //but use some more, since the moving objects in the image may produce some outliers
+
+		    //so add some other matches, which have not been added yet:
+
+		    cur_factor = prev_factor+1;
+
+		    for( int i = 0; i < descriptors_next.rows; i++ )
+            {
+                if( matches[i].distance > prev_factor*min_dist &&  matches[i].distance < cur_factor*min_dist)
+                {
+                    good_matches.push_back( matches[i]);
+
+                    if(good_matches.size() >= minNumKeypoints)
+                        break;
+                }
+            }
+
+		    prev_factor = cur_factor;
+
+		}
 
 		//-- Localize the object
 		std::vector<Point2f> next;

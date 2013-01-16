@@ -24,9 +24,15 @@ public:
   //         holds the path to the image
   std::string getImage();
 
+  int getNumberOfImagesToUse()
+  {
+      return number_of_images_to_use;
+  }
+
 private:
   std::string refdir_;
   std::string image_;
+  int number_of_images_to_use;
 };
 
 #endif

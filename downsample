@@ -1,0 +1,11 @@
+#!/bin/sh
+
+
+
+for dir in pic_sets/lowres/*
+do
+	echo "exec mopet for $dir"
+	echo $base
+	fname=`basename $dir`
+	mogrify -resize 50x50% -quality 90 $dir/*.JPG
+done

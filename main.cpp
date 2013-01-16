@@ -7,6 +7,8 @@
 #include "helper.h"
 #include "preprocessor.h"
 #include "VarianceForegroundClassifier.h"
+#include "ColorVarianceForegroundClassifier.h"
+#include "TestForegroundClassifier.h"
 #include "InPainter.h"
 
 
@@ -27,14 +29,42 @@ int main(int argc, char* argv[])
 	if (!success)
 		return -1;
 
-	Preprocessor preprocessor(helper.getRefDir(), helper.getImage());
-	VarianceForegroundClassifier classifier;
+	Preprocessor preprocessor(helper.getRefDir(), helper.getNumberOfImagesToUse());
+	ColorVarianceForegroundClassifier classifier;
 	InPainter inPainter;
 
 	preprocessor.loadImageSet(image_set);
 
 	// preprocess images
 	preprocessor.matchImages(image_set, transformed_set, transformed_gray_set);
+
+
+
+	//save transformed images
+    for(unsigned int f = 0; f < transformed_set.size(); f++)
+    {
+        std::string filename;
+        filename = "out/transformed_";
+        std::ostringstream converter;
+        converter << f;
+        filename += converter.str();
+        filename += ".jpg";
+        cv::imwrite(filename, transformed_set.at(f));
+    }
+
+/*
+    //save foreground masks:
+    for(unsigned int f = 0; f < transformed_set.size(); f++)
+    {
+        std::string filename;
+        filename = "out/diff_";
+        std::ostringstream converter;
+        converter << f;
+        filename += converter.str();
+        filename += ".jpg";
+        cv::Mat diff = (transformed_set.at(f) - transformed_set.at(0))*50;
+        cv::imwrite(filename, diff);
+    }*/
 
 
 	// detect and remove foreground objects
