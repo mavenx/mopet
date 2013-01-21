@@ -25,6 +25,8 @@ add_executable(
   VarianceForegroundClassifier.cpp
   ColorVarianceForegroundClassifier.h
   ColorVarianceForegroundClassifier.cpp
+  HSVVarianceForegroundClassifier.h
+  HSVVarianceForegroundClassifier.cpp
   TestForegroundClassifier.h
   TestForegroundClassifier.cpp
   InPainter.h

@@ -8,6 +8,7 @@
 #include "preprocessor.h"
 #include "VarianceForegroundClassifier.h"
 #include "ColorVarianceForegroundClassifier.h"
+#include "HSVVarianceForegroundClassifier.h"
 #include "TestForegroundClassifier.h"
 #include "InPainter.h"
 
@@ -30,6 +31,7 @@ int main(int argc, char* argv[])
 		return -1;
 
 	Preprocessor preprocessor(helper.getRefDir(), helper.getNumberOfImagesToUse());
+//	HSVVarianceForegroundClassifier classifier;
 	ColorVarianceForegroundClassifier classifier;
 	InPainter inPainter;
 

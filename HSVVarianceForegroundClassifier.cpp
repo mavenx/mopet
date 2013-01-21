@@ -5,27 +5,27 @@
  *      Author: michael
  */
 
-#include "ColorVarianceForegroundClassifier.h"
+#include "HSVVarianceForegroundClassifier.h"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdlib.h>
 
 using namespace cv;
 using namespace std;
 
-ColorVarianceForegroundClassifier::ColorVarianceForegroundClassifier() {
+HSVVarianceForegroundClassifier::HSVVarianceForegroundClassifier() {
 
 }
 
-ColorVarianceForegroundClassifier::~ColorVarianceForegroundClassifier() {
+HSVVarianceForegroundClassifier::~HSVVarianceForegroundClassifier() {
 
 }
 
 
 
-void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_set, std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &foregroundMasks)
+void HSVVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_set, std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &foregroundMasks)
 {
 	std::vector<cv::Mat> s_gray_set;   //smoothed gray set
-	std::vector<cv::Mat> s_color_set;   //smoothed color set
+	std::vector<cv::Mat> s_hsv_set;   //smoothed hsv set
 
 
 	//create empty foreground masks:
@@ -39,15 +39,19 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	for(unsigned int f = 0; f < gray_set.size(); f++)
 	{
 	    cv::Mat blur;
-	    float sigma = 3;
+	    cv::Mat temp;
+	    float sigma = 1;
 
 	    cv::GaussianBlur(gray_set.at(f), blur, cv::Size(0,0), sigma);
 	    s_gray_set.push_back(blur);
 
-	    cv::GaussianBlur(color_set.at(f), blur, cv::Size(0,0), sigma);
-	    s_color_set.push_back(blur);
+	    cv::GaussianBlur(color_set.at(f), temp, cv::Size(0,0), sigma);
 
 
+	    // convert to hsv
+//	    cv::cvtColor(temp, temp, CV_RGB2HSV);
+
+	    s_hsv_set.push_back(temp);
 //	    string filename;
 //	        filename = "out/gauss_";
 //	        ostringstream converter;
@@ -62,8 +66,9 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	cv::Mat values = cv::Mat_<unsigned char>::zeros(1, numpics);
 	cv::Mat sortIdx;
 
-	float beta = 1;
-	float alpha = 200;
+	float beta = 2;
+	float alpha = 2000;
+	float gamma = 5;
 
 	int debug = 0;
 
@@ -74,12 +79,12 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	        //extract the pixel values to a cv::Mat
 	        for(unsigned int f = 0; f < s_gray_set.size(); f++)
 	        {
-	            values.at<unsigned char>(0,f) = s_gray_set.at(f).at<unsigned char>(y,x);
+	            values.at<unsigned char>(0,f) = s_hsv_set.at(f).at<Vec3b>(y,x)[0];
 
 	        }
 
 	         //UNCOMMENT if you want to debug certain pixels ;)
-//	        if(x == 230 && y == 170)
+//	        if(x == 400 && y == 760)
 //	            debug = 1;
 //	        else
 //	            debug = 0;
@@ -126,33 +131,38 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	            {
 	                float func;
 
-	                Vec3b newValb = s_color_set.at(sortIdx.at<int>(0,start+length-1)).at<Vec3b>(y,x);
+	                Vec3b newValb = s_hsv_set.at(sortIdx.at<int>(0,start+length-1)).at<Vec3b>(y,x);
                     Vec3f newVal = newValb;
 
-//                    if(debug)
-//                        cout << "newval(length=" << length << "):" << newVal << endl;
+                    if(debug)
+                        cout << "newval(length=" << length << "): [" << newVal.val[0] << " " << newVal.val[1] << " " << newVal.val[2] << "]"<< endl;
+
+
+                    Vec3f diff = newVal-mean;
+                    mean = mean + (1/(float)length) * diff;
+//                    cout << "sssssss: " << (newVal - mean)[0] << endl;
+//	                mean = mean*(length-1) + newVal;
+//	                mean = mean/length;
+
+	                if(debug)
+	                    cout << "mean: [" << mean.val[0] << " " << mean.val[1] << " " << mean.val[2] << "]"<< endl;
 
 
 
+	                if(debug)
+	                    cout << "diff: [" << diff.val[0] << " " << diff.val[1] << " " << diff.val[2] << "]"<< endl;
 
-	                mean = mean*(length-1) + newVal;
-	                mean = mean/length;
+	                variance = variance + diff.mul(newVal - mean);
+	                variance = variance/(length);
+//	                variance = variance*(length-1)+diff.mul(diff);
+//	                variance = variance/length;
 
-//	                if(debug)
-//	                    cout << "mean: " << mean << endl;
+	                if(debug)
+	                    cout << "variance: [" << variance.val[0] << " " << variance.val[1] << " " << variance.val[2] << "]"<< endl;
 
-	                Vec3f diff = newVal-mean;
+//	                func = sqrt(pow(variance[0],2) + pow(variance[1],2) + pow(variance[2],2)) + alpha/pow(length,beta);//1/(variance+1/(float)length);
+	                func = sqrt(pow(gamma * variance[0],2) + pow(gamma*variance[1],2) + pow(gamma*variance[2],2)) + alpha/pow(length,beta);//1/(variance+1/(float)length);
 
-//	                if(debug)
-//	                    cout << "diff: " << diff << endl;
-
-	                variance = variance*(length-1)+diff.mul(diff);
-	                variance = variance/length;
-
-//	                if(debug)
-//	                    cout << "variance: " << variance << endl;
-
-	                func = sqrt(pow(variance[0],2) + pow(variance[1],2) + pow(variance[2],2)) + alpha/pow(length,beta);//1/(variance+1/(float)length);
 
 	                func = -func;
 
@@ -199,7 +209,7 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	        if(debug)
 	        {
 	            for(int i = 0; i < numpics; i++)
-	                cout << (unsigned)foregroundMasks.at(i).at<uchar>(y,x);
+	                cout << (unsigned)foregroundMasks.at(i).at<uchar>(y,x) << endl;
 	        }
 	    }
 	}
@@ -208,17 +218,27 @@ void ColorVarianceForegroundClassifier::detectForeground(std::vector<cv::Mat> &g
 	//remove noise:
 	for(unsigned int f = 0; f < gray_set.size(); f++)
     {
-	    int morph_size = 10;
+	    int morph_size = 2;
 	    cv::Mat kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
 
+	    cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_OPEN, kernel);//, Point(-1,-1), 2);
 
-	    cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_CLOSE, kernel);//, Point(-1,-1), 2);
-
-	    morph_size = 3;
+	    morph_size = 30;
 	    kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
-	    cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_OPEN, kernel);//, Point(-1,-1), 1);
+	    cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_CLOSE, kernel);//, Point(-1,-1), 1);
     }
 
+//	for(unsigned int f = 0; f < gray_set.size(); f++)
+//	{
+//		int morph_size = 5;
+//		cv::Mat kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
+//
+//		cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MOR, kernel);//, Point(-1,-1), 2);
+//
+////		morph_size = 10;
+////		kernel = cv::getStructuringElement(MORPH_ELLIPSE, Size( 2*morph_size + 1, 2*morph_size+1 ));//, Point( morph_size, morph_size ) );
+////		cv::morphologyEx(foregroundMasks.at(f), foregroundMasks.at(f), MORPH_CLOSE, kernel);//, Point(-1,-1), 1);
+//	}
 
 	//save foreground masks:
     for(unsigned int f = 0; f < gray_set.size(); f++)

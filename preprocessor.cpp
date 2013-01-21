@@ -73,7 +73,7 @@ bool Preprocessor::loadImageSet(std::vector<cv::Mat> &image_set)
 
     for(unsigned i = 1; i < image_set.size();i++)
     {
-        //histMatchRGB(image_set.at(i),cv::Mat_<uchar>::ones(image_set.at(1).size()), image_set.at(0),cv::Mat_<uchar>::ones(image_set.at(1).size()));
+//        histMatchRGB(image_set.at(i),cv::Mat_<uchar>::ones(image_set.at(1).size()), image_set.at(0),cv::Mat_<uchar>::ones(image_set.at(1).size()));
         //cv::imwrite("out/after.jpg", image_set.at(1));
     }
 
@@ -91,8 +91,8 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 	Mat first_img = image_set.at(0);
 	Mat next_img;
 
-	const int maxNumKeypoints = -1;
-	const unsigned minNumKeypoints = 150;
+	const int maxNumKeypoints = 10000;
+	const unsigned int minNumGoodMatches = 1000;
 
 	transformed.push_back(first_img);
 
@@ -108,24 +108,30 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 
 //	int minHessian = 500;
 //	cv::SurfFeatureDetector detector( minHessian, 2, 2, false, false);
-	cv::FastFeatureDetector detector(40, false);
+	cv::FastFeatureDetector detector(40, true);
 //	cv::GFTTDetector detector( int maxCorners=1000, double qualityLevel=0.01, double minDistance=1,
 //	                  int blockSize=3, bool useHarrisDetector=false, double k=0.04 );
 
 	cv::SurfDescriptorExtractor extractor;
+
 	cv::FlannBasedMatcher matcher;
+//	cv::BFMatcher matcher = cv::BFMatcher(cv::NORM_HAMMING, true);
 
 	std::vector< DMatch > matches;
 	std::vector<KeyPoint> keypts_next, keypts_first;
+	std::vector<KeyPoint> keypts_next_extracted, keypts_first_extracted;
 	Mat descriptors_next, descriptors_first;
 
-	detector.detect( first_img, keypts_first );
+	detector.detect( first_img, keypts_first_extracted );
 
-	while(keypts_first.size() > (int)maxNumKeypoints && maxNumKeypoints > 0)
+	int randm = rand() % keypts_first_extracted.size();
+	keypts_first.push_back(keypts_first_extracted.at(randm));
+
+	while(keypts_first.size() < (int)maxNumKeypoints && maxNumKeypoints > 0 )
 	{
-	    //remove all keypoints after numberOfImagesToUse
-
-	    keypts_first.pop_back();
+	    //select random keypoints for homography estimation
+		randm = rand() % keypts_first_extracted.size();
+	    keypts_first.push_back(keypts_first_extracted.at(randm));
 	}
 
 	extractor.compute( first_img, keypts_first, descriptors_first );
@@ -139,38 +145,42 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 //		resize(image_set.at(0), next_img, Size(image_set.at(0).cols*scale, image_set.at(0).rows*scale));
 
 		//-- Step 1: Detect the keypoints using SURF Detector
-		detector.detect( next_img, keypts_next );
+		detector.detect( next_img, keypts_next_extracted );
 
-		while(keypts_next.size() > (int)maxNumKeypoints && maxNumKeypoints > 0)
-        {
-            //remove all keypoints after maxNumKeypoints
+		keypts_next.clear();
+		randm = rand() % keypts_next_extracted.size();
+		keypts_next.push_back(keypts_next_extracted.at(randm));
 
-		    keypts_next.pop_back();
-        }
-
-		/*
-		 * Draw position of keypoints (for debugging):
-		 *
-		 * for(unsigned i = 0; i < keypts_next.size(); i++)
+		while(keypts_next.size() < (int)maxNumKeypoints && maxNumKeypoints > 0)
 		{
-		    int x,y;
-
-		    x = keypts_next.at(i).pt.x;
-		    y = keypts_next.at(i).pt.y;
-
-		    if(x > 0 && x < next_img.cols && y > 0 && y < next_img.rows)
-		    {
-		        Vec3b &v = next_img.at<Vec3b>(y,x);
-
-		        v[0] = 0;
-		        v[1] = 0;
-		        v[2] = 255;
-		    }
+		    //select random keypoints for homography estimation
+			randm = rand() % keypts_next_extracted.size();
+		    keypts_next.push_back(keypts_next_extracted.at(randm));
 		}
 
-		cv::namedWindow( "Fore", CV_WINDOW_NORMAL);
-        cv::imshow("Fore", next_img);
-        cv::waitKey(0);*/
+
+		// Draw position of keypoints (for debugging):
+
+//		for(unsigned i = 0; i < keypts_next.size(); i++)
+//		{
+//			int x,y;
+//
+//			x = keypts_next.at(i).pt.x;
+//			y = keypts_next.at(i).pt.y;
+//
+//			if(x > 0 && x < next_img.cols && y > 0 && y < next_img.rows)
+//			{
+//				Vec3b &v = next_img.at<Vec3b>(y,x);
+//
+//				v[0] = 0;
+//				v[1] = 0;
+//				v[2] = 255;
+//			}
+//		}
+//
+//		cv::namedWindow( "Fore", CV_WINDOW_NORMAL);
+//        cv::imshow("Fore", next_img);
+//        cv::waitKey(0);
 
 
 		//-- Step 2: Calculate descriptors (feature vectors)
@@ -180,7 +190,7 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 		matcher.match( descriptors_next, descriptors_first, matches );
 
 		double max_dist = 0; double min_dist = 100;
-		cout << descriptors_next.rows << endl;
+		cout << "using " << descriptors_next.rows << " of " << keypts_next_extracted.size() <<   " Keypoints"<< endl;
 		//-- Quick calculation of max and min distances between keypoints
 		for( int i = 0; i < descriptors_next.rows; i++ )
 		{
@@ -209,7 +219,8 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
 		int prev_factor = 2;
 		int cur_factor;
 
-		while(good_matches.size() < minNumKeypoints)
+		cout << "found " << good_matches.size() << " good matches!"<< endl;
+		while(good_matches.size() < minNumGoodMatches)
 		{
 		    //we need at least 4 matches for a homography
 		    //but use some more, since the moving objects in the image may produce some outliers
@@ -224,7 +235,7 @@ void Preprocessor::matchImages(std::vector<cv::Mat> &image_set, std::vector<cv::
                 {
                     good_matches.push_back( matches[i]);
 
-                    if(good_matches.size() >= minNumKeypoints)
+                    if(good_matches.size() >= minNumGoodMatches)
                         break;
                 }
             }

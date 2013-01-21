@@ -129,8 +129,8 @@ void TestForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_set, 
 	                Vec3b newValb = s_color_set.at(sortIdx.at<int>(0,start+length-1)).at<Vec3b>(y,x);
                     Vec3f newVal = newValb;
 
-                    if(debug)
-                        cout << "newval(length=" << length << "):" << newVal << endl;
+//                    if(debug)
+//                        cout << "newval(length=" << length << "):" << newVal << endl;
 
 
 
@@ -138,19 +138,19 @@ void TestForegroundClassifier::detectForeground(std::vector<cv::Mat> &gray_set, 
 	                mean = mean*(length-1) + newVal;
 	                mean = mean/length;
 
-	                if(debug)
-	                    cout << "mean: " << mean << endl;
+//	                if(debug)
+//	                    cout << "mean: " << mean << endl;
 
 	                Vec3f diff = newVal-mean;
 
-	                if(debug)
-	                    cout << "diff: " << diff << endl;
+//	                if(debug)
+//	                    cout << "diff: " << diff << endl;
 
 	                variance = variance*(length-1)+diff.mul(diff);
 	                variance = variance/length;
 
-	                if(debug)
-	                    cout << "variance: " << variance << endl;
+//	                if(debug)
+//	                    cout << "variance: " << variance << endl;
 
 	                func = sqrt(pow(variance[0],2) + pow(variance[1],2) + pow(variance[2],2)) + alpha/pow(length,beta);//1/(variance+1/(float)length);
 

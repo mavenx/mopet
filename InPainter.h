@@ -29,6 +29,8 @@ public:
      * in addition some kind of alpha blending is performed.
      */
     void inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &foregroundMasks, cv::Mat& outputImage);
+
+    void inPaintMedian(std::vector<cv::Mat> &color_set, cv::Mat output, int y, int x);
 };
 
 #endif /* INPAINTER_H_ */

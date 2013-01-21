@@ -11,6 +11,7 @@
 #include "VarianceForegroundClassifier.h"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <stdlib.h>
+#include <stdio.h>
 
 using namespace cv;
 using namespace std;
@@ -34,7 +35,7 @@ InPainter::~InPainter() {
  */
 void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &foregroundMasks, cv::Mat& outputImage)
 {
-    const int blendradius = 300;
+    const int blendradius = 20;
 
     outputImage = Mat::zeros(color_set.at(0).size(), color_set.at(0).type());
     cv::Mat distanceToForeground = Mat::zeros(color_set.at(0).size(), CV_32FC1);
@@ -64,6 +65,10 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
     //This is necessary to obtain the alpha value for alpha blending
     cv::distanceTransform(255-foregroundMasks.at(0), distanceToForeground, CV_DIST_L2, CV_DIST_MASK_PRECISE);
 
+
+//    cv::namedWindow( "Distance", CV_WINDOW_NORMAL);
+//    cv::imshow("Distance", distanceToForeground);
+//    cv::waitKey(0);
 
     for(int y = 0; y < foregroundMasks.at(0).rows; y++)
     {
@@ -96,6 +101,8 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
                         c2 += color_set.at(f).at<Vec3b>(y,x)[1];
                         c3 += color_set.at(f).at<Vec3b>(y,x)[2];
                         sum ++;
+////                        if(sum == 2)
+                        	break;
                     }
                 }
 
@@ -110,6 +117,7 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
                     //or the median
                     Vec3b def(0,0,255);
                     outputImage.at<Vec3b>(y,x) = def;
+                    inPaintMedian(color_set, outputImage, y, x);
                 }
                 else
                 {
@@ -132,5 +140,37 @@ void InPainter::inPaint(std::vector<cv::Mat> &color_set, std::vector<cv::Mat> &f
     /*cv::namedWindow( "BG", CV_WINDOW_NORMAL);
     cv::imshow("BG", outputImage);
     cv::waitKey(0);*/
+}
+
+void InPainter::inPaintMedian(std::vector<cv::Mat> &color_set, cv::Mat output, int y, int x)
+{
+	std::vector<int> R;
+	std::vector<int> G;
+	std::vector<int> B;
+
+	unsigned int numPics = color_set.size();
+
+	Vec3b median_val;
+	cv::Mat actImage;
+
+	for(unsigned int s = 0; s < numPics; s++)
+	{
+		R.push_back(color_set.at(s).at<Vec3b>(y,x)[2]);
+		G.push_back(color_set.at(s).at<Vec3b>(y,x)[1]);
+		B.push_back(color_set.at(s).at<Vec3b>(y,x)[0]);
+	}
+
+	cv::sort(R, R, CV_SORT_ASCENDING + CV_SORT_EVERY_ROW);
+	cv::sort(G, G, CV_SORT_ASCENDING + CV_SORT_EVERY_ROW);
+	cv::sort(B, B, CV_SORT_ASCENDING + CV_SORT_EVERY_ROW);
+
+	Vec3b median;
+
+	median[0] = B.at(numPics/2);
+	median[1] = G.at(numPics/2);
+	median[2] = R.at(numPics/2);
+
+	output.at<Vec3b>(y,x) = median;
+
 }
 
