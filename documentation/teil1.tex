@@ -39,6 +39,52 @@ Therefore, we need to align the images with the following steps.
 
 
 
+\section{Foreground/Background Classification}
+
+To classify between moving Foreground and static Background, we developed our own method called
+``Minimum Variance Classifier''.
+
+We are using the following assumptions to distinguish between foreground and background.
+
+\begin{itemize}
+ \item Moving Foreground leads to different pixel values at one position (x,y).
+ \item Static background should lead to very similar pixel values.
+ \item Therefore, the variance of the background pixels should be lower than the variance of the foreground.
+\end{itemize}
+ 
+First, we perform a gaussian filtering to reduce the influence of noise. For this purpose a sigma
+of around 3 to 6 lead to the best performance. A too small sigma would not sufficiently suppress noise,
+and a too large sigma would not lead to a accurate estimation of foreground and background.
+
+We iterate through all (x,y) positions and the n gray values of the n input pictures.
+We sort the n pixel according to the their gray value.
+Now we iterate through all possible groups of neighbouring(after sorting) pixels.
+
+e.g.:
+\begin{itemize}
+ \item pixels 1-2
+ \item pixels 1-3
+ \item pixels 1-4
+ \item pixels 2-3
+ \item pixels 2-4
+ \item ....
+\end{itemize}
+
+For each group of pixel $\Omega$ we calculate the following cost function:
+
+$$
+f(\Omega) = var\{R(\Omega)\} + var\{G(\Omega)\} + var\{B(\Omega)\} + \frac{\alpha}{length\{\Omega\}}
+$$
+
+$R(\Omega)$, $G(\Omega)$ and $B(\Omega)$ are the pixel values of the red, green and blue channel
+of the group. $length\{\Omega\}$ is the number of pixels in a group. $\alpha$ is a tuning parameter.
+Finally, the group with the smallest function value is classified as background, and all
+other pixels are classified as moving foreground.
+
+Since we are minimizing this cost function, we are minimizing the variance of the pixel values.
+
+
+
 \chapter{Implementation}
 
 We implemented the algorithm in C++ with OpenCV.
