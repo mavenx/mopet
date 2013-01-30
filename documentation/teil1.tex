@@ -10,7 +10,40 @@ detects all moving persons and objects and removes them.
 
 
 
+\chapter{Methods}
 
+Unfortunately, we did not find any papers or other literature to this topic. Most of the methods for estimating
+background are using a video stream as input and estimate the optical flow.
+We decided to use a series of images,
+because the quality of a single picture is much better than the quality of a frame in a video.
+
+In a series of images it is very difficult to estimate the optical flow, because the time between
+two images is very much longer, than in a video stream.
+
+Therefore, we came up with our own idea.
+
+\section{Registration of images}
+
+We don't assume that the series of pictures are taken using a tripod.
+Because of small movements of the camera during a continuous shooting, the image section may move
+around.
+Therefore, we need to align the images with the following steps.
+
+\begin{itemize}
+ \item Applying a feature-detector to all images and calculating feature descriptors.
+  As a feature-detector we used FAST and for the descriptor SURF.
+ \item The feature-descriptors of all images are matched to the features of the first image.
+ \item RANSAC is used to estimate a homography, which is robust against outliers due to moving foreground.
+ \item All images are then warped, to the position of the first image.
+\end{itemize}
+
+
+
+\chapter{Implementation}
+
+We implemented the algorithm in C++ with OpenCV.
+
+\chapter{Evaluation / Results}
 
 
 
